@@ -1,7 +1,26 @@
+# Network
+data "aws_vpc" "emr" {
+
+  id   = var.vpc_id
+  tags = var.vpc_name == null ? null : { Name = var.vpc_name }
+
+}
+
+data "aws_subnet" "emr" {
+
+  vpc_id = data.aws_vpc.emr.id
+
+  id   = var.subnet_id   == null ? null : var.subnet_id
+  tags = var.subnet_name == null ? null : { Name = var.subnet_name }
+
+}
+
+
 resource "aws_emr_cluster" "cluster" {
+
   name                              = var.name
   release_label                     = var.release_label
-  service_role                      = var.service_role_arn
+  service_role                      = var.service_role_arn == null ? aws_iam_role.emr_service_role[0].arn : var.service_role_arn
   additional_info                   = var.additional_info
   applications                      = var.applications
   autoscaling_role                  = var.autoscaling_role
@@ -108,14 +127,14 @@ resource "aws_emr_cluster" "cluster" {
     for_each = var.ec2_attributes == null ? [] : [1]
 
     content {
-      instance_profile                  = var.ec2_attributes.instance_profile                  # Instance Profile for EC2 instances of the cluster assume this role.
+      instance_profile                  = aws_iam_instance_profile.emr[0].arn        # Instance Profile for EC2 instances of the cluster assume this role.
       additional_master_security_groups = var.ec2_attributes.additional_master_security_groups # String containing a comma separated list of additional Amazon EC2 security group IDs for the master node.
       additional_slave_security_groups  = var.ec2_attributes.additional_slave_security_groups  # String containing a comma separated list of additional Amazon EC2 security group IDs for the slave nodes as a comma separated string.
       emr_managed_master_security_group = var.ec2_attributes.emr_managed_master_security_group # Identifier of the Amazon EC2 EMR-Managed security group for the master node.
       emr_managed_slave_security_group  = var.ec2_attributes.emr_managed_slave_security_group  # Identifier of the Amazon EC2 EMR-Managed security group for the slave nodes.
       key_name                          = var.ec2_attributes.key_name                          # Amazon EC2 key pair that can be used to ssh to the master node as the user called hadoop.
       service_access_security_group     = var.ec2_attributes.service_access_security_group     # Identifier of the Amazon EC2 service-access security group - required when the cluster runs on a private subnet.
-      subnet_id                         = var.ec2_attributes.subnet_id                         # VPC subnet id where you want the job flow to launch. Cannot specify the cc1.4xlarge instance type for nodes of a job flow launched in an Amazon VPC.
+      subnet_id                         = data.aws_subnet.emr.id                               # VPC subnet id where you want the job flow to launch. Cannot specify the cc1.4xlarge instance type for nodes of a job flow launched in an Amazon VPC.
     }
   }
 
@@ -134,4 +153,12 @@ resource "aws_emr_cluster" "cluster" {
     }
 
   }
-}
+
+  tags = merge(
+    local.tags,
+    {
+      # https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-managed-iam-policies.html#manually-tagged-resources
+      "for-use-with-amazon-emr-managed-policies" = true
+    },
+  )
+}/**/

@@ -1,6 +1,50 @@
-####################
-## Cluster config ##
-####################
+variable "account_id" {
+  type    = string
+}
+
+variable "region_id" {
+  type    = string
+}
+
+variable "vpc_name" {
+  type    = string
+  default = null
+}
+
+variable "vpc_id" {
+  type    = string
+  default = null
+}
+
+variable "subnet_name" {
+  type    = string
+  default = null
+}
+
+variable "subnet_id" {
+  type    = string
+  default = null
+}
+
+variable "create_security_group" {
+  type    = bool
+  default = true
+}
+
+variable "security_group_id" {
+  type    = string
+  default = null
+}
+
+variable "create_service_role" {
+  type    = bool
+  default = true
+}
+
+variable "create_instance_profile" {
+  type    = bool
+  default = true
+}
 
 variable "availability_zone" {
   description = "(Required) The availability zone where the instance is going to be launched in."
